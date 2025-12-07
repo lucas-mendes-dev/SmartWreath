@@ -1,80 +1,63 @@
 #include <Arduino.h>
+#include "../lib/MusicEngine/MusicPlayer.h"
 
-// Definicao dos pinos
-const int buzzer = 4;
-const int led1 = 6;
-const int led2 = 7;
-const int btn1 = 8;
-const int btn2 = 9;
+#define PIN_BUZZER 4
+#define PIN_LED1 6
+#define PIN_LED2 7
+#define PIN_BTN1 8
+#define PIN_BTN2 9
 
-// Notas musicais (Frequencias)
-#define NOTE_C4  262
-#define NOTE_D4  294
-#define NOTE_E4  330
-#define NOTE_F4  349
-#define NOTE_G4  392
-#define NOTE_A4  440
-#define NOTE_AS4 466
-#define NOTE_B4  494
-#define NOTE_C5  523
-#define NOTE_D5  587
+MusicPlayer player(PIN_BUZZER);
 
-void playJingleBells();
+// Jingle Bells
+const MusicNote melody_jingle[] = {
+  {NOTE_E4, EIGHTH}, {NOTE_E4, EIGHTH}, {NOTE_E4, QUARTER},
+  {NOTE_E4, EIGHTH}, {NOTE_E4, EIGHTH}, {NOTE_E4, QUARTER},
+  {NOTE_E4, EIGHTH}, {NOTE_G4, EIGHTH}, {NOTE_C4, EIGHTH}, {NOTE_D4, EIGHTH},
+  {NOTE_E4, HALF}
+};
 
-void playCarolOfTheBells();
+// Carol of the Bells
+const MusicNote melody_carol[] = {
+  {NOTE_F5, QUARTER}, {NOTE_E5, EIGHTH}, {NOTE_F5, EIGHTH}, {NOTE_D5, EIGHTH},{NOTE_A4, EIGHTH},
+  {NOTE_F5, QUARTER}, {NOTE_E5, EIGHTH}, {NOTE_F5, EIGHTH}, {NOTE_D5, EIGHTH},{NOTE_A4, EIGHTH},
+  {NOTE_F5, QUARTER}, {NOTE_E5, EIGHTH}, {NOTE_F5, EIGHTH}, {NOTE_D5, EIGHTH},{NOTE_A4, EIGHTH}, 
+  {NOTE_F5, QUARTER}, {NOTE_E5, EIGHTH}, {NOTE_F5, EIGHTH}, {NOTE_D5, HALF},
+};
 
 void setup() {
-  pinMode(buzzer, OUTPUT);
-  pinMode(led1, OUTPUT);
-  pinMode(led2, OUTPUT);
-  
-  // Usando PULLUP para dispensar resistor externo no bot�o
-  pinMode(btn1, INPUT_PULLUP);
-  pinMode(btn2, INPUT_PULLUP);
+    pinMode(PIN_BTN1, INPUT_PULLUP);
+    pinMode(PIN_BTN2, INPUT_PULLUP);
+    pinMode(PIN_LED1, OUTPUT);
+    pinMode(PIN_LED2, OUTPUT);
+    digitalWrite(PIN_LED1, LOW);
+    digitalWrite(PIN_LED2, LOW);
+
+    player.setBPM(80);
+    player.play(melody_jingle, sizeof(melody_jingle)/sizeof(MusicNote), PIN_LED1);
+
+    unsigned long initial_time = millis();
+    unsigned long jingle_duration = (60000 * 4) / (80 * (int)8)*8 + (60000 * 4) / (80 * (int)4)*2 + (60000 * 4) / (80 * (int)2)*1;
+
+    while(millis() - initial_time < jingle_duration) {
+        player.update();
+    }
+    
+    delay(1500);
+    player.setBPM(140);
+    player.play(melody_carol, sizeof(melody_carol)/sizeof(MusicNote), PIN_LED2);
 }
 
 void loop() {
-  // Verifica bot�o 1 - Jingle Bells
-  if (digitalRead(btn1) == LOW) {
-    digitalWrite(led1, HIGH);
-    playJingleBells();
-    digitalWrite(led1, LOW);
-  }
-
-  // Verifica bot�o 2 - Carol of the Bells
-  if (digitalRead(btn2) == LOW) {
-    digitalWrite(led2, HIGH);
-    playCarolOfTheBells();
-    digitalWrite(led2, LOW);
-  }
-}
-
-// --- Fun��es Musicais ---
-
-void toneOut(int note, int duration) {
-  tone(buzzer, note, duration);
-  delay(duration * 1.30); // Pausa entre notas
-  noTone(buzzer);
-}
-
-void playJingleBells() {
-  // 4 compassos simplificados (Refre�o)
-  int melody[] = { NOTE_E4, NOTE_E4, NOTE_E4, NOTE_E4, NOTE_E4, NOTE_E4, NOTE_E4, NOTE_G4, NOTE_C4, NOTE_D4, NOTE_E4 };
-  int durations[] = { 200, 200, 400, 200, 200, 400, 200, 200, 200, 200, 800 };
-  
-  for (int i = 0; i < 11; i++) {
-    toneOut(melody[i], durations[i]);
-  }
-}
-
-void playCarolOfTheBells() {
-  // Motivo principal repetido 4 vezes
-  int motif[] = { NOTE_AS4, NOTE_A4, NOTE_AS4, NOTE_G4 };
-  int dur = 200;
-
-  for (int compasso = 0; compasso < 4; compasso++) {
-    for (int i = 0; i < 4; i++) {
-      toneOut(motif[i], dur);
+    player.update();
+    if (digitalRead(PIN_BTN1) == LOW) {
+        player.setBPM(80);
+        player.play(melody_jingle, sizeof(melody_jingle)/sizeof(MusicNote), PIN_LED1);
+        delay(200);
     }
-  }
+    if (digitalRead(PIN_BTN2) == LOW) {
+        player.setBPM(140);
+        player.play(melody_carol, sizeof(melody_carol)/sizeof(MusicNote), PIN_LED2);
+        delay(200);
+    }
 }
